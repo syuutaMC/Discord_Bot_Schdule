@@ -10,3 +10,6 @@ RUN apt-get update \
 # pip upgrade
 RUN pip install --upgrade pip
 RUN pip install uv
+
+COPY requirements.txt ./
+RUN uv install -r requirements.txt

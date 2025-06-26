@@ -12,4 +12,4 @@ RUN pip install --upgrade pip
 RUN pip install uv
 
 COPY requirements.txt ./
-RUN uv install -r requirements.txt
+RUN uv pip sync requirements.txt

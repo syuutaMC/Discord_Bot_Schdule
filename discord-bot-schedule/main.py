@@ -7,7 +7,6 @@ from dao_sqlite3 import dao_sqlite3
 
 # if you change constants, also update docker-compose
 TOKEN = os.getenv("TOKEN")
-ID_CHANNEL_WELCOME = int(os.getenv("CATEGORY_ID"))
 
 
 intents = discord.Intents.default()

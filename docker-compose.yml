@@ -1,0 +1,20 @@
+version: '1'
+services:
+  python:
+    # . は現在docker-compose.yamlと同じディレクトリのDockerfileを指しています。
+    # 複数のイメージを使う場合などは./botなどディレクトリを指定します。
+    build:
+      context: ./docker/python
+      dockerfile: Dockerfile
+
+    volumes:
+      # ./botのディレクトリを仮想環境の/usr/src/appにマウントする
+      # rwと記述することで書き込みも可能なディレクトリとして認識される
+      - ./discord-bot-schedule:/app/bot
+    environment:
+      # ${}で囲んだものは.envファイルから環境変数を取得する
+      - TOKEN=${TOKEN}
+      - CATEGORY_ID=$(CATEGORY_ID)
+    command: ["uv", "run", "/app/bot/main.py"]
+    tty: true
+    restart: always

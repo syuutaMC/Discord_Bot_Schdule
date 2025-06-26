@@ -13,7 +13,7 @@ RUN pip install uv
 
 # uv 仮想環境の作成
 RUN uv venv
-RUN source .venv/bin/activate
+RUN .venv/bin/activate
 
 COPY requirements.txt ./
 RUN uv pip install -r requirements.txt

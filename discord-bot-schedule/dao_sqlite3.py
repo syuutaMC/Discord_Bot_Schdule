@@ -41,3 +41,8 @@ class dao_sqlite3(object):
         self._curs.execute(f'SELECT channel_id FROM {self.tablename} WHERE event_id = {event_id}')
         result = self._curs.fetchone()[0]
         return result
+    
+
+if __name__ == '__main__':
+    db = dao_sqlite3()
+    print(db.select_all())

@@ -41,9 +41,15 @@ def register(schedule_group: app_commands.Group, db) -> None:
             print(f"Failed to delete event {event_id_int}: {e}")
 
         if channel:
-            await channel.delete(reason='schedule delete command')
+            try:
+                await channel.delete(reason='schedule delete command')
+            except discord.NotFound:
+                pass  # Already deleted
         if role:
-            await role.delete(reason='schedule delete command')
+            try:
+                await role.delete(reason='schedule delete command')
+            except discord.NotFound:
+                pass  # Already deleted
 
         db.delete_event(event_id_int)
         await interaction.followup.send('削除しました。', ephemeral=True)

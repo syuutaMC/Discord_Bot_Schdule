@@ -37,10 +37,6 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int, 
                 scheduled_event = None
 
             if not scheduled_event:
-                if channel:
-                    await channel.delete(reason='schedule fix cleanup')
-                if role:
-                    await role.delete(reason='schedule fix cleanup')
                 db.delete_event(event_id)
                 cleaned += 1
                 continue

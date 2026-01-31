@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.10
 import discord
 import os
+from zoneinfo import ZoneInfo
 
 from discord import app_commands
 
@@ -43,6 +44,10 @@ tree = app_commands.CommandTree(client)
 
 db = dao_sqlite3()
 setup_schedule_commands(tree, db, UPCOMING_CATEGORY_ID, ENDED_CATEGORY_ID)
+
+
+def _format_event_date_jst(dt) -> str:
+    return dt.astimezone(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m-%d')
 
 
 # 起動時に動作する処理
@@ -108,7 +113,7 @@ async def _resync_event_members():
 async def on_scheduled_event_create(event):
     guild = event.guild
     ## イベント作成時にロール作成とチャンネルを作成する
-    role = await guild.create_role(name = f"{event.start_time.strftime('%Y-%m-%d')}")
+    role = await guild.create_role(name = f"{_format_event_date_jst(event.start_time)}")
 
     member = guild.get_member(event.creator_id)
     await member.add_roles(role)
@@ -120,7 +125,7 @@ async def on_scheduled_event_create(event):
 
     upcoming_category = guild.get_channel(UPCOMING_CATEGORY_ID)
     channel = await guild.create_text_channel(
-        f"{event.start_time.strftime('%Y-%m-%d')}_飲み会",
+        f"{_format_event_date_jst(event.start_time)}_飲み会",
         overwrites=overwrites,
         category=upcoming_category,
     )
@@ -172,9 +177,9 @@ async def on_scheduled_event_update(before, after):
         role = guild.get_role(role_id)
 
         if text_channel:
-            await text_channel.edit(name = f"{after.start_time.strftime('%Y-%m-%d')}_飲み会")
+            await text_channel.edit(name = f"{_format_event_date_jst(after.start_time)}_飲み会")
         if role:
-            await role.edit(name = f"{after.start_time.strftime('%Y-%m-%d')}")
+            await role.edit(name = f"{_format_event_date_jst(after.start_time)}")
 
     if before.status != after.status:
         channel_id = db.get_channel_id(after.id)

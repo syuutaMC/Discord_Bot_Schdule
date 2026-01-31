@@ -1,11 +1,12 @@
 import discord
 from discord import app_commands
+from zoneinfo import ZoneInfo
 
 from ._log import log_command
 
 
 def _format_event_date(dt) -> str:
-    return dt.strftime('%Y-%m-%d')
+    return dt.astimezone(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m-%d')
 
 
 def register(schedule_group: app_commands.Group, db, upcoming_category_id: int) -> None:

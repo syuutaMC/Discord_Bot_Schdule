@@ -17,9 +17,11 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int, 
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
+
         records = db.list_events()
         if not records:
-            await interaction.response.send_message('登録済みスケジュールはありません。', ephemeral=True)
+            await interaction.followup.send('登録済みスケジュールはありません。', ephemeral=True)
             return
 
         fixed = 0
@@ -78,7 +80,7 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int, 
                 db.update_event(event_id, updated_channel_id, updated_role_id)
                 fixed += 1
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f'修復完了: 修復 {fixed} 件 / 削除 {cleaned} 件',
             ephemeral=True,
         )

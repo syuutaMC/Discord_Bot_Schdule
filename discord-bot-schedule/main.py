@@ -4,7 +4,7 @@ import os
 
 from discord import app_commands
 
-from schedule_commands import setup_schedule_commands
+from commands import setup_schedule_commands
 
 from dao_sqlite3 import dao_sqlite3
 

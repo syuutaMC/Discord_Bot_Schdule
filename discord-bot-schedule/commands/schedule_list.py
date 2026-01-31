@@ -26,9 +26,11 @@ def register(schedule_group: app_commands.Group, db) -> None:
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
+
         events = db.list_events()
         if not events:
-            await interaction.response.send_message('登録済みスケジュールはありません。', ephemeral=True)
+            await interaction.followup.send('登録済みスケジュールはありません。', ephemeral=True)
             return
 
         lines = ['event_id | status | channel | role']
@@ -57,6 +59,6 @@ def register(schedule_group: app_commands.Group, db) -> None:
             lines.append(f'{event_id} | {status_text} | {channel_text} | {role_text}')
 
         chunks = _chunk_lines(lines)
-        await interaction.response.send_message(chunks[0], ephemeral=True)
+        await interaction.followup.send(chunks[0], ephemeral=True)
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)

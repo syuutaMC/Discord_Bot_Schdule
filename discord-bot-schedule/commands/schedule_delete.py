@@ -25,6 +25,8 @@ def register(schedule_group: app_commands.Group, db) -> None:
             await interaction.response.send_message('該当のレコードが見つかりません。', ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
+
         _, channel_id, role_id = record
         channel = interaction.guild.get_channel(channel_id)
         role = interaction.guild.get_role(role_id)
@@ -44,4 +46,4 @@ def register(schedule_group: app_commands.Group, db) -> None:
             await role.delete(reason='schedule delete command')
 
         db.delete_event(event_id_int)
-        await interaction.response.send_message('削除しました。', ephemeral=True)
+        await interaction.followup.send('削除しました。', ephemeral=True)

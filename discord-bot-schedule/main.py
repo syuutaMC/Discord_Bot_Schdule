@@ -50,6 +50,61 @@ def _format_event_date_jst(dt) -> str:
     return dt.astimezone(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m-%d')
 
 
+async def _sync_scheduled_event(guild: discord.Guild, event: discord.ScheduledEvent) -> None:
+    """Sync a single scheduled event: create/update role, channel, DB, and assign roles to attendees."""
+    record = db.get_event(event.id)
+    role_id = record[2] if record else None
+    channel_id = record[1] if record else None
+
+    role = guild.get_role(role_id) if role_id else None
+    if not role:
+        role_name = _format_event_date_jst(event.start_time)
+        role = discord.utils.get(guild.roles, name=role_name)
+        if not role:
+            role = await guild.create_role(name=role_name)
+
+    channel = guild.get_channel(channel_id) if channel_id else None
+    if not channel:
+        channel_name = f"{_format_event_date_jst(event.start_time)}_飲み会"
+        channel = discord.utils.get(guild.text_channels, name=channel_name)
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            role: discord.PermissionOverwrite(view_channel=True),
+        }
+        upcoming_category = guild.get_channel(UPCOMING_CATEGORY_ID)
+        if channel is None:
+            channel = await guild.create_text_channel(
+                channel_name,
+                overwrites=overwrites,
+                category=upcoming_category,
+            )
+        else:
+            await channel.edit(overwrites=overwrites, category=upcoming_category)
+
+    if record:
+        if role_id != role.id or channel_id != channel.id:
+            db.update_event(event.id, channel.id, role.id)
+    else:
+        db.insert_event(event.id, channel.id, role.id)
+
+    try:
+        async for attendee in event.users():
+            member = None
+            if isinstance(attendee, discord.Member):
+                member = attendee
+            elif isinstance(attendee, discord.User):
+                member = guild.get_member(attendee.id)
+                if member is None:
+                    try:
+                        member = await guild.fetch_member(attendee.id)
+                    except discord.HTTPException:
+                        member = None
+            if member and role not in member.roles:
+                await member.add_roles(role)
+    except discord.HTTPException as e:
+        print(f"Error fetching users for event {event.id}: {e}")
+
+
 async def _cleanup_event_resources(guild: discord.Guild, event_id: int) -> None:
     record = db.get_event(event_id)
     if not record:
@@ -98,30 +153,13 @@ async def _resync_event_members():
 
             role_id = record[2]
             channel_id = record[1]
-
             role = guild.get_role(role_id) if role_id else None
             channel = guild.get_channel(channel_id) if channel_id else None
 
             if not role or not channel:
                 continue
 
-            try:
-                async for attendee in event.users():
-                    member = None
-                    if isinstance(attendee, discord.Member):
-                        member = attendee
-                    elif isinstance(attendee, discord.User):
-                        member = guild.get_member(attendee.id)
-                        if member is None:
-                            try:
-                                member = await guild.fetch_member(attendee.id)
-                            except discord.HTTPException:
-                                member = None
-                    if member and role not in member.roles:
-                        await member.add_roles(role)
-            except discord.HTTPException as e:
-                print(f"Error fetching users for event {event.id}: {e}")
-                continue
+            await _sync_scheduled_event(guild, event)
 
 # イベント作成時
 @client.event
@@ -131,7 +169,8 @@ async def on_scheduled_event_create(event):
     role = await guild.create_role(name = f"{_format_event_date_jst(event.start_time)}")
 
     member = guild.get_member(event.creator_id)
-    await member.add_roles(role)
+    if member:
+        await member.add_roles(role)
 
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),

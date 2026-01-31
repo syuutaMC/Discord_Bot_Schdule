@@ -35,61 +35,16 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int) 
                 skipped += 1
                 continue
 
-            record = db.get_event(event.id)
-            role_id = record[2] if record else None
-            channel_id = record[1] if record else None
+            record_before = db.get_event(event.id)
+            # Import sync function from main
+            from main import _sync_scheduled_event
+            await _sync_scheduled_event(interaction.guild, event)
+            record_after = db.get_event(event.id)
 
-            role = interaction.guild.get_role(role_id) if role_id else None
-            if not role:
-                role_name = _format_event_date(event.start_time)
-                role = discord.utils.get(interaction.guild.roles, name=role_name)
-                if not role:
-                    role = await interaction.guild.create_role(name=role_name)
-
-            channel = interaction.guild.get_channel(channel_id) if channel_id else None
-            if not channel:
-                channel_name = f"{_format_event_date(event.start_time)}_飲み会"
-                channel = discord.utils.get(interaction.guild.text_channels, name=channel_name)
-
-                overwrites = {
-                    interaction.guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                    role: discord.PermissionOverwrite(view_channel=True),
-                }
-                upcoming_category = interaction.guild.get_channel(upcoming_category_id)
-                if channel is None:
-                    channel = await interaction.guild.create_text_channel(
-                        channel_name,
-                        overwrites=overwrites,
-                        category=upcoming_category,
-                    )
-                    created += 1
-                else:
-                    await channel.edit(overwrites=overwrites, category=upcoming_category)
-
-            if record:
-                if role_id != role.id or channel_id != channel.id:
-                    db.update_event(event.id, channel.id, role.id)
-                    updated += 1
-            else:
-                db.insert_event(event.id, channel.id, role.id)
+            if not record_before:
                 created += 1
-
-            try:
-                async for attendee in event.users():
-                    member = None
-                    if isinstance(attendee, discord.Member):
-                        member = attendee
-                    elif isinstance(attendee, discord.User):
-                        member = interaction.guild.get_member(attendee.id)
-                        if member is None:
-                            try:
-                                member = await interaction.guild.fetch_member(attendee.id)
-                            except discord.HTTPException:
-                                member = None
-                    if member and role not in member.roles:
-                        await member.add_roles(role)
-            except discord.HTTPException:
-                continue
+            elif record_before[1:] != record_after[1:]:
+                updated += 1
 
         await interaction.followup.send(
             f'同期完了: 作成 {created} / 更新 {updated} / スキップ {skipped}',

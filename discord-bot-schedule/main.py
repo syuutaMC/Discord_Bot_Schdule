@@ -52,7 +52,6 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('Version : 0.1')
-    await _resync_event_members()
     await tree.sync()
 
 
@@ -74,38 +73,17 @@ async def _resync_event_members():
             if event.status != discord.EventStatus.scheduled:
                 continue
             record = db.get_event(event.id)
-            role_id = record[2] if record else None
+            if not record:
+                continue
+
+            role_id = record[2]
+            channel_id = record[1]
+
             role = guild.get_role(role_id) if role_id else None
-            if not role:
-                role_name = f"{event.start_time.strftime('%Y-%m-%d')}"
-                role = discord.utils.get(guild.roles, name=role_name)
-                if not role:
-                    role = await guild.create_role(name=role_name)
-
-            channel_id = record[1] if record else None
             channel = guild.get_channel(channel_id) if channel_id else None
-            if not channel:
-                channel_name = f"{event.start_time.strftime('%Y-%m-%d')}_飲み会"
-                channel = discord.utils.get(guild.text_channels, name=channel_name)
-                overwrites = {
-                    guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                    role: discord.PermissionOverwrite(view_channel=True),
-                }
-                upcoming_category = guild.get_channel(UPCOMING_CATEGORY_ID)
-                if channel is None:
-                    channel = await guild.create_text_channel(
-                        channel_name,
-                        overwrites=overwrites,
-                        category=upcoming_category,
-                    )
-                else:
-                    await channel.edit(overwrites=overwrites, category=upcoming_category)
 
-            if record:
-                if role_id != role.id or channel_id != channel.id:
-                    db.update_event(event.id, channel.id, role.id)
-            else:
-                db.insert_event(event.id, channel.id, role.id)
+            if not role or not channel:
+                continue
 
             try:
                 async for attendee in event.users():

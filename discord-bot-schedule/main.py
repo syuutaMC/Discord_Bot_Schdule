@@ -73,26 +73,38 @@ async def _resync_event_members():
         for event in events:
             if event.status != discord.EventStatus.scheduled:
                 continue
-            role_id = db.get_role_id(event.id)
+            record = db.get_event(event.id)
+            role_id = record[2] if record else None
             role = guild.get_role(role_id) if role_id else None
             if not role:
-                role = await guild.create_role(name=f"{event.start_time.strftime('%Y-%m-%d')}")
+                role_name = f"{event.start_time.strftime('%Y-%m-%d')}"
+                role = discord.utils.get(guild.roles, name=role_name)
+                if not role:
+                    role = await guild.create_role(name=role_name)
 
-            channel_id = db.get_channel_id(event.id)
+            channel_id = record[1] if record else None
             channel = guild.get_channel(channel_id) if channel_id else None
             if not channel:
+                channel_name = f"{event.start_time.strftime('%Y-%m-%d')}_飲み会"
+                channel = discord.utils.get(guild.text_channels, name=channel_name)
                 overwrites = {
                     guild.default_role: discord.PermissionOverwrite(view_channel=False),
                     role: discord.PermissionOverwrite(view_channel=True),
                 }
                 upcoming_category = guild.get_channel(UPCOMING_CATEGORY_ID)
-                channel = await guild.create_text_channel(
-                    f"{event.start_time.strftime('%Y-%m-%d')}_飲み会",
-                    overwrites=overwrites,
-                    category=upcoming_category,
-                )
+                if channel is None:
+                    channel = await guild.create_text_channel(
+                        channel_name,
+                        overwrites=overwrites,
+                        category=upcoming_category,
+                    )
+                else:
+                    await channel.edit(overwrites=overwrites, category=upcoming_category)
 
-            if not role_id or not channel_id:
+            if record:
+                if role_id != role.id or channel_id != channel.id:
+                    db.update_event(event.id, channel.id, role.id)
+            else:
                 db.insert_event(event.id, channel.id, role.id)
 
             try:

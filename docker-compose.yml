@@ -1,4 +1,3 @@
-version: '1'
 services:
   python:
     # . は現在docker-compose.yamlと同じディレクトリのDockerfileを指しています。

@@ -8,13 +8,19 @@ def register(schedule_group: app_commands.Group, db) -> None:
     @schedule_group.command(name='delete', description='指定したスケジュールを削除（DB/チャンネル/ロール）')
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.describe(event_id='DiscordスケジュールイベントのID')
-    async def schedule_delete(interaction: discord.Interaction, event_id: int):
+    async def schedule_delete(interaction: discord.Interaction, event_id: str):
         log_command('schedule.delete', interaction.guild_id, interaction.user.id)
         if not interaction.guild:
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return
 
-        record = db.get_event(event_id)
+        try:
+            event_id_int = int(event_id.strip())
+        except ValueError:
+            await interaction.response.send_message('event_id は整数で入力してください。', ephemeral=True)
+            return
+
+        record = db.get_event(event_id_int)
         if not record:
             await interaction.response.send_message('該当のレコードが見つかりません。', ephemeral=True)
             return
@@ -28,5 +34,5 @@ def register(schedule_group: app_commands.Group, db) -> None:
         if role:
             await role.delete(reason='schedule delete command')
 
-        db.delete_event(event_id)
+        db.delete_event(event_id_int)
         await interaction.response.send_message('削除しました。', ephemeral=True)

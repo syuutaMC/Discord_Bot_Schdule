@@ -6,9 +6,10 @@ conn = sqlite3.connect(dbname)
 cur = conn.cursor()
 
 # personsというtableを作成してみる
-cur.execute(
-    'CREATE TABLE schedule(event_id INTEGER PRIMARY KEY, role_id INTEGER, channel_id INTEGER)'
-)
+def select_all(self):
+    self._curs.execute('SELECT * FROM ' + self.tablename)
+    for row in self._curs:
+        print(row)
 
 # データベースへコミット。これで変更が反映される。
 conn.commit()

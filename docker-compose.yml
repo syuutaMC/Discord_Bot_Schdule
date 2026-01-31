@@ -15,7 +15,12 @@ services:
     environment:
       # ${}で囲んだものは.envファイルから環境変数を取得する
       - TOKEN=${TOKEN}
-      - CATEGORY_ID=$(CATEGORY_ID)
+      - ENV=${ENV}
+      - TOKEN_TEST=${TOKEN_TEST}
+      - UPCOMING_CATEGORY_ID=${UPCOMING_CATEGORY_ID}
+      - ENDED_CATEGORY_ID=${ENDED_CATEGORY_ID}
+      - UPCOMING_CATEGORY_ID_TEST=${UPCOMING_CATEGORY_ID_TEST}
+      - ENDED_CATEGORY_ID_TEST=${ENDED_CATEGORY_ID_TEST}
     command: ["uv", "run", "main.py"]
     tty: true
     restart: always

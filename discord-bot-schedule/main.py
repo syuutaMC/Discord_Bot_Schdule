@@ -108,12 +108,17 @@ async def _resync_event_members():
                 db.insert_event(event.id, channel.id, role.id)
 
             try:
-                async for attendee in event.users(with_members=True):
+                async for attendee in event.users():
                     member = None
                     if isinstance(attendee, discord.Member):
                         member = attendee
                     elif isinstance(attendee, discord.User):
                         member = guild.get_member(attendee.id)
+                        if member is None:
+                            try:
+                                member = await guild.fetch_member(attendee.id)
+                            except discord.HTTPException:
+                                member = None
                     if member and role not in member.roles:
                         await member.add_roles(role)
             except discord.HTTPException as e:

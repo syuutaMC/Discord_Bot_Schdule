@@ -50,10 +50,17 @@ def _format_event_date_jst(dt) -> str:
     return dt.astimezone(ZoneInfo("Asia/Tokyo")).strftime('%Y-%m-%d')
 
 
-def _remove_event_record(event_id: int) -> None:
+async def _cleanup_event_resources(guild: discord.Guild, event_id: int) -> None:
     record = db.get_event(event_id)
     if not record:
         return
+    _, channel_id, role_id = record
+    channel = guild.get_channel(channel_id)
+    role = guild.get_role(role_id)
+    if channel:
+        await channel.delete(reason='scheduled event cleanup')
+    if role:
+        await role.delete(reason='scheduled event cleanup')
     db.delete_event(event_id)
 
 
@@ -144,7 +151,7 @@ async def on_scheduled_event_create(event):
 @client.event
 async def on_scheduled_event_delete(event):
     if event.guild:
-        _remove_event_record(event.id)
+        await _cleanup_event_resources(event.guild, event.id)
 
 
 @client.event
@@ -202,7 +209,7 @@ async def on_scheduled_event_update(before, after):
             ended_category = guild.get_channel(ENDED_CATEGORY_ID)
             await text_channel.edit(category=ended_category)
         elif after.status == discord.EventStatus.canceled:
-            _remove_event_record(after.id)
+            await _cleanup_event_resources(guild, after.id)
 
 
 if __name__ == '__main__':

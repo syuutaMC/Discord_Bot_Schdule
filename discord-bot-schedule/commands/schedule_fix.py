@@ -37,8 +37,6 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int, 
                 scheduled_event = None
 
             if not scheduled_event:
-                db.delete_event(event_id)
-                cleaned += 1
                 continue
 
             updated_channel_id = channel_id

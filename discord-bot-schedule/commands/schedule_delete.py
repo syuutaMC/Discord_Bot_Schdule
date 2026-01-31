@@ -1,12 +1,15 @@
 import discord
 from discord import app_commands
 
+from ._log import log_command
+
 
 def register(schedule_group: app_commands.Group, db) -> None:
     @schedule_group.command(name='delete', description='指定したスケジュールを削除（DB/チャンネル/ロール）')
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.describe(event_id='DiscordスケジュールイベントのID')
     async def schedule_delete(interaction: discord.Interaction, event_id: int):
+        log_command('schedule.delete', interaction.guild_id, interaction.user.id)
         if not interaction.guild:
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return

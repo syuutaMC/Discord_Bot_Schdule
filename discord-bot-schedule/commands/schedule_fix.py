@@ -1,6 +1,8 @@
 import discord
 from discord import app_commands
 
+from ._log import log_command
+
 
 def _format_event_date(dt):
     return dt.strftime('%Y-%m-%d')
@@ -10,6 +12,7 @@ def register(schedule_group: app_commands.Group, db, upcoming_category_id: int, 
     @schedule_group.command(name='fix', description='不整合を検出して修復')
     @app_commands.checks.has_permissions(manage_guild=True)
     async def schedule_fix(interaction: discord.Interaction):
+        log_command('schedule.fix', interaction.guild_id, interaction.user.id)
         if not interaction.guild:
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return

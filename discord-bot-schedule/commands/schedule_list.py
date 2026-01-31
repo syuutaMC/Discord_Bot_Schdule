@@ -1,6 +1,8 @@
 import discord
 from discord import app_commands
 
+from ._log import log_command
+
 
 def _chunk_lines(lines, max_len=1900):
     chunks = []
@@ -19,6 +21,7 @@ def register(schedule_group: app_commands.Group, db) -> None:
     @schedule_group.command(name='list', description='DBに保存されているスケジュール一覧を表示')
     @app_commands.checks.has_permissions(manage_guild=True)
     async def schedule_list(interaction: discord.Interaction):
+        log_command('schedule.list', interaction.guild_id, interaction.user.id)
         if not interaction.guild:
             await interaction.response.send_message('サーバー内で実行してください。', ephemeral=True)
             return

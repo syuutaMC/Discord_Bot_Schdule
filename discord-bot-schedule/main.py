@@ -71,6 +71,7 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('Version : 0.1')
+    await _resync_event_members()
     await tree.sync()
 
 

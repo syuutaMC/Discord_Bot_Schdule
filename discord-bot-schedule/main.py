@@ -96,14 +96,16 @@ async def _resync_event_members():
                 db.insert_event(event.id, channel.id, role.id)
 
             try:
-                async for subscriber in event.fetch_subscribers(with_members=True):
-                    member = subscriber.member
-                    if member is None:
-                        member = guild.get_member(subscriber.user.id)
+                async for attendee in event.users(with_members=True):
+                    member = None
+                    if isinstance(attendee, discord.Member):
+                        member = attendee
+                    elif isinstance(attendee, discord.User):
+                        member = guild.get_member(attendee.id)
                     if member and role not in member.roles:
                         await member.add_roles(role)
             except discord.HTTPException as e:
-                print(f"Error fetching subscribers for event {event.id}: {e}")
+                print(f"Error fetching users for event {event.id}: {e}")
                 continue
 
 # イベント作成時

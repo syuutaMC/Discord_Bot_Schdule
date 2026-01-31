@@ -96,7 +96,8 @@ async def _resync_event_members():
                 db.insert_event(event.id, channel.id, role.id)
 
             try:
-                async for user in event.fetch_users(limit=None):
+                users = await guild.fetch_scheduled_event_users(event)
+                for user in users:
                     member = guild.get_member(user.id)
                     if member and role not in member.roles:
                         await member.add_roles(role)

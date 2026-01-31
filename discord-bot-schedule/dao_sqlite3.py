@@ -7,11 +7,24 @@ class dao_sqlite3(object):
         self._conn = None
         self._curs = None
         self._conn_db()
+        self._ensure_table()
 
     # DBの接続管理
     def _conn_db(self):
         self._conn = sqlite3.connect(self.dbname)
         self._curs = self._conn.cursor()
+
+    def _ensure_table(self):
+        self._curs.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {self.tablename} (
+                event_id INTEGER PRIMARY KEY,
+                channel_id INTEGER NOT NULL,
+                role_id INTEGER NOT NULL
+            );
+            """
+        )
+        self._conn.commit()
 
     def _close_db(self):
         self._conn.close()

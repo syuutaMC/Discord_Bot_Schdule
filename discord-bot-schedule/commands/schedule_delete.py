@@ -29,6 +29,15 @@ def register(schedule_group: app_commands.Group, db) -> None:
         channel = interaction.guild.get_channel(channel_id)
         role = interaction.guild.get_role(role_id)
 
+        # Delete scheduled event
+        try:
+            scheduled_event = await interaction.guild.fetch_scheduled_event(event_id_int)
+            await scheduled_event.delete()
+        except discord.NotFound:
+            pass  # Already deleted
+        except discord.HTTPException as e:
+            print(f"Failed to delete event {event_id_int}: {e}")
+
         if channel:
             await channel.delete(reason='schedule delete command')
         if role:

@@ -25,10 +25,12 @@ if ENV == "test":
     TOKEN = os.getenv("TOKEN_TEST")
     UPCOMING_CATEGORY_ID = _get_env_int("UPCOMING_CATEGORY_ID_TEST")
     ENDED_CATEGORY_ID = _get_env_int("ENDED_CATEGORY_ID_TEST")
+    TARGET_GUILD_ID = _get_env_int("GUILD_ID_TEST")
 else:
     TOKEN = os.getenv("TOKEN")
     UPCOMING_CATEGORY_ID = _get_env_int("UPCOMING_CATEGORY_ID")
     ENDED_CATEGORY_ID = _get_env_int("ENDED_CATEGORY_ID")
+    TARGET_GUILD_ID = _get_env_int("GUILD_ID")
 
 
 intents = discord.Intents.default()
@@ -47,7 +49,56 @@ async def on_ready():
     print(client.user.name)
     print(client.user.id)
     print('Version : 0.1')
+    await _resync_event_members()
     await tree.sync()
+
+
+async def _resync_event_members():
+    if TARGET_GUILD_ID:
+        guilds = [client.get_guild(TARGET_GUILD_ID)]
+    else:
+        guilds = client.guilds
+
+    for guild in guilds:
+        if not guild:
+            continue
+        try:
+            events = await guild.fetch_scheduled_events()
+        except discord.HTTPException:
+            continue
+
+        for event in events:
+            if event.status != discord.EventStatus.scheduled:
+                continue
+            role_id = db.get_role_id(event.id)
+            role = guild.get_role(role_id) if role_id else None
+            if not role:
+                role = await guild.create_role(name=f"{event.start_time.strftime('%Y-%m-%d')}")
+
+            channel_id = db.get_channel_id(event.id)
+            channel = guild.get_channel(channel_id) if channel_id else None
+            if not channel:
+                overwrites = {
+                    guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                    role: discord.PermissionOverwrite(view_channel=True),
+                }
+                upcoming_category = guild.get_channel(UPCOMING_CATEGORY_ID)
+                channel = await guild.create_text_channel(
+                    f"{event.start_time.strftime('%Y-%m-%d')}_飲み会",
+                    overwrites=overwrites,
+                    category=upcoming_category,
+                )
+
+            if not role_id or not channel_id:
+                db.insert_event(event.id, channel.id, role.id)
+
+            try:
+                async for user in event.fetch_users(limit=None):
+                    member = guild.get_member(user.id)
+                    if member and role not in member.roles:
+                        await member.add_roles(role)
+            except discord.HTTPException:
+                continue
 
 # イベント作成時
 @client.event

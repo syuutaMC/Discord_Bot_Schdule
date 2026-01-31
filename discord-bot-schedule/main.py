@@ -188,6 +188,8 @@ async def schedule_list(interaction: discord.Interaction):
                 status_text = 'キャンセル'
         except discord.NotFound:
             status_text = '削除済み'
+        except discord.HTTPException:
+            status_text = '別サーバー/不明'
 
         lines.append(f'{event_id} | {status_text} | {channel_text} | {role_text}')
 
@@ -288,6 +290,7 @@ async def schedule_fix(interaction: discord.Interaction):
             db.delete_event(event_id)
             cleaned += 1
             continue
+
 
         updated_channel_id = channel_id
         updated_role_id = role_id
